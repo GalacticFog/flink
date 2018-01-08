@@ -6,6 +6,7 @@ function read_env {
       if [[ "$var" =~ ^flink_ ]]; then
         env_var=`echo "$var" | sed -r "s/(.*)=.*/\1/g"` #extract just the env var name out of $var
         flink_property=`echo "$env_var" | tr _ .  | sed -e "s/flink.//g"`
+        echo "$flink_property: ${!env_var}"
         echo "$flink_property: ${!env_var}" >> $FLINK_CONFIG_FILE
       fi
     done
@@ -13,9 +14,24 @@ function read_env {
 
 if [ "$1" = "jobmanager" ]; then
 
-    export flink_jobmanager_rpc_address=$HOST
-    export flink_jobmanager_rpc_port=$PORT0
-    export flink_jobmanager_web_port=$PORT1
+    echo "container debug : "
+    echo "hostname -f : " 
+    hostname -f
+    echo "hostname -i : " 
+    hostname -i
+
+    rpcPort=${job_manager_rpc_port_override:-$PORT0}
+    webPort=${job_manager_web_port_override:-$PORT1}
+    blobPort=${job_manager_blob_port_override:-$PORT2}
+
+    echo "port 0 : $rpcPort" 
+    echo "port 1 : $webPort" 
+    echo "port 2 : $blobPort" 
+
+    export flink_jobmanager_rpc_address=${job_manager_rpc_override:-$(hostname -i)}
+    export flink_jobmanager_rpc_port=$rpcPort
+    export flink_jobmanager_web_port=$webPort
+    export flink_blob_server_port=$blobPort
 
     read_env
 
@@ -27,7 +43,7 @@ if [ "$1" = "jobmanager" ]; then
 
 elif [ "$1" = "taskmanager" ]; then
 
-    export flink_taskmanager_hostname=$HOST
+    export flink_taskmanager_hostname=$(hostname -i)
     export flink_taskmanager_rpc_port=$PORT0
     export flink_taskmanager_data_port=$PORT1
     export flink_blob_server_port=$PORT2
